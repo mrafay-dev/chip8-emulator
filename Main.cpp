@@ -7,12 +7,12 @@
 
 int main(int argc, char** argv) {
 	if (argc != 4) {
-		std::cerr << "Usage: " << argv[0] << " <Scale> <Delay> <ROM>\n";
+		std::cerr << "Usage: " << argv[0] << " <Scale> <Cycle ms> <ROM>\n";
 		std::exit(EXIT_FAILURE);
 	}
 	
 	int displayScale = std::stoi(argv[1]);
-	int cycleDelay = std::stoi(argv[2]);
+	const double CYCLE_MS  = std::stoi(argv[2]);
 	char const* romFilename = argv[3];
 	
 	Platform platform("CHIP-8 Emulator", VID_WIDTH * displayScale, VID_HEIGHT * displayScale, VID_WIDTH, VID_HEIGHT);
@@ -25,19 +25,27 @@ int main(int argc, char** argv) {
 	auto lastCycleTime = std::chrono::high_resolution_clock::now();
 	bool quit = false;
 	
+	          // 2 ms per cycle (~500 Hz)
+	double accumulator = 0.0;
+	auto previous = std::chrono::high_resolution_clock::now();
+
 	while (!quit) {
+		auto current = std::chrono::high_resolution_clock::now();
+		double delta = std::chrono::duration<double, std::milli>(current - previous).count();
+		previous = current;
+		accumulator += delta;
+
+		// Poll input every frame
 		quit = platform.ProcessInput(chip8.input_keys);
-		
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float dt = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - lastCycleTime).count();
-		
-		if (dt > cycleDelay) {
-			lastCycleTime = currentTime;
-			
+
+		// Run as many cycles as needed to catch up
+		while (accumulator >= CYCLE_MS) {
 			chip8.Cycle();
-			
-			platform.Update(chip8.display, videoPitch);
+			accumulator -= CYCLE_MS;
 		}
+
+		// Render once per frame (or when dirty)
+		platform.Update(chip8.display, videoPitch);
 	}
 	return 0;
 
