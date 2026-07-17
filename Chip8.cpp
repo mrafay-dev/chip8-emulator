@@ -53,7 +53,7 @@ Chip8::Chip8()
 		table[0x5] = &Chip8::OP_5xy0;
 		table[0x6] = &Chip8::OP_6xkk;
 		table[0x7] = &Chip8::OP_7xkk;
-		table[0x8] = &Chip8::Table8;
+		table[0x8] = &Chip8::Table8;  
 		table[0x9] = &Chip8::OP_9xy0;
 		table[0xA] = &Chip8::OP_Annn;
 		table[0xB] = &Chip8::OP_Bnnn;
@@ -135,7 +135,7 @@ void Chip8::Cycle(){
 	pc += 2;
 	
 	//decode + execute
-	((*this).*(table[(opcode & 0xF000u) >> 12u]))();
+	((*this).*(table[(opcode & 0xF000u) >> 12u]))(); // gets the first digit of the opcode. then puts it through the function dispatch table
 	
 	if (delay_timer > 0) {
 		--delay_timer;
